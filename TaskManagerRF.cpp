@@ -1,4 +1,3 @@
-#pragma message("Compiling TaskManagerRF.cpp")
 #define TASKMANAGER_MAIN
 
 #include <arduino.h>
