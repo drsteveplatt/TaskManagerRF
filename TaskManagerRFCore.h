@@ -89,7 +89,7 @@ public:
 		\param sigNum -- The value of the signal to be sent
 		\sa yieldForSignal(), sendSignalAll(), addWaitSignal, addAutoWaitSignal()
 	*/
-	void sendSignal(byte nodeId, byte sigNum);
+	bool sendSignal(byte nodeId, byte sigNum);
 
 	/*! \brief Send a signal to all tasks that are waiting for this particular signal.
 
@@ -98,7 +98,7 @@ public:
 		\sa sendSignal(), yieldForSiganl(), addWaitSignal(), addAutoWaitSignal()
 	*/
 
-	void sendSignalAll(byte nodeId, byte sigNum);
+	bool sendSignalAll(byte nodeId, byte sigNum);
 
 	/*! \brief  Sends a string message to a task
 
@@ -116,7 +116,7 @@ public:
 		TASKMGR_MESSAGE_LENGTH-1 characters.
 		\sa yieldForMessage()
 	*/
-	void sendMessage(byte nodeId, byte taskId, char* message);
+	bool sendMessage(byte nodeId, byte taskId, char* message);
 
 	/*! \brief Send a binary message to a task
 
@@ -133,7 +133,7 @@ public:
 		\sa yieldForMessage()
 	*/
 
-	void sendMessage(byte nodeId, byte taskId, void* buf, int len);
+	bool sendMessage(byte nodeId, byte taskId, void* buf, int len);
 
 	/*!	\brief Get source node/task of last message/signal
 
@@ -161,7 +161,7 @@ public:
 		\note Not implemented.
 		\sa resume()
 	*/
-	void suspend(byte nodeId, byte taskId);			// node, task
+	bool suspend(byte nodeId, byte taskId);			// node, task
 
 	/*!	\brief Resume the given task on the given node
 
@@ -172,12 +172,12 @@ public:
 		\note Not implemented.
 		\sa suspend()
 	*/
-	void resume(byte nodeId, byte taskId);			// node, task
+	bool resume(byte nodeId, byte taskId);			// node, task
 	/*! @} */
 
 
 private:
-	void radioSender(byte);	// generic packet sender
+	bool radioSender(byte);	// generic packet sender
 
     // status requests/
     //void yieldPingNode(byte);					// node -> status (responding/not responding)

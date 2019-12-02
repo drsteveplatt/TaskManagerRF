@@ -8,6 +8,8 @@
 
 extern TaskManagerRF TaskMgr;
 
+#include <Streaming.h>
+
 /*! \file TaskManagerRF.cpp
     Implementation file for Arduino Task Manager
 */
@@ -86,22 +88,33 @@ void TaskManagerRF::tmRadioReceiverTask() {
 
 // General purpose sender.  Sends a message somewhere (varying with the kind of radio)
 static byte nodeName[6] = "xTMGR";	// shared buf
-void TaskManagerRF::radioSender(byte destNodeID) {
+bool TaskManagerRF::radioSender(byte destNodeID) {
 	// send packet to NRF24 node "TMGR"+nodeID
 	//static byte nodeName[6] = F("xTMGR");
+	bool ret;
 	m_rf24->stopListening(); delay(50);
 	nodeName[0] = destNodeID;
 	nodeName[4] = 'R'; // was [3]
 	m_rf24->openWritingPipe(nodeName);
+	ret = false;
 	for(int i=0; i<5; i++) {
+		if(m_rf24->write(&radioBuf, sizeof(radioBuf))) {
+			ret = true;
+			break;
+		}
+		else delay(5);
+#if false
 		if(!m_rf24->write(&radioBuf, sizeof(radioBuf))) {
 			Serial.print(F("write fail ")); Serial.println(i);
 		}
 		else {
+			ret = true;
 			break;
 		}
+#endif
 	}
 	m_rf24->startListening();
+	return ret;
 }
 
 // If we have different radio receivers, they will have different instantiation routines.
@@ -113,6 +126,7 @@ void TaskManagerRF::radioBegin(byte nodeId, byte cePin, byte csPin) {
 	//strcpy((char*)pipeName,"xTMGR");	// R for read
 	nodeName[0] = myNodeId();	// (read pipe preconfigure) not printable, who cares...
 	m_rf24->begin();
+	m_rf24->setRetries(15,8); // 4ms betw retries, 8 retries
 	m_rf24->openReadingPipe(1, nodeName);
 	m_rf24->startListening();
 	nodeName[4] = 'R';	// write -- was [3] and 'R'
@@ -121,25 +135,25 @@ void TaskManagerRF::radioBegin(byte nodeId, byte cePin, byte csPin) {
 }
 
 
-void TaskManagerRF::sendSignal(byte nodeId, byte sigNum) {
+bool TaskManagerRF::sendSignal(byte nodeId, byte sigNum) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::sendSignal(sigNum); return; }
 	radioBuf.m_cmd = tmrSignal;
 	radioBuf.m_fromNodeId = myNodeId();
 	radioBuf.m_fromTaskId = myId();
 	radioBuf.m_data[0] = sigNum;
-	radioSender(nodeId);
+	return radioSender(nodeId);
 }
 
-void TaskManagerRF::sendSignalAll(byte nodeId, byte sigNum) {
+bool TaskManagerRF::sendSignalAll(byte nodeId, byte sigNum) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::sendSignalAll(sigNum); return; }
 	radioBuf.m_cmd = tmrSignalAll;
 	radioBuf.m_fromNodeId = myNodeId();
 	radioBuf.m_fromTaskId = myId();
 	radioBuf.m_data[0] = sigNum;
-	radioSender(nodeId);
+	return radioSender(nodeId);
 }
 
-void TaskManagerRF::sendMessage(byte nodeId, byte taskId, char* message) {
+bool TaskManagerRF::sendMessage(byte nodeId, byte taskId, char* message) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::sendMessage(taskId, message); return; }
 	radioBuf.m_cmd = tmrMessage;
 	radioBuf.m_fromNodeId = myNodeId();
@@ -151,10 +165,10 @@ void TaskManagerRF::sendMessage(byte nodeId, byte taskId, char* message) {
 	} else {
 		strcpy((char*)&radioBuf.m_data[1], message);
 	}
-	radioSender(nodeId);
+	return radioSender(nodeId);
 }
 
-void TaskManagerRF::sendMessage(byte nodeId, byte taskId, void* buf, int len) {
+bool TaskManagerRF::sendMessage(byte nodeId, byte taskId, void* buf, int len) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::sendMessage(taskId, buf, len); return; }
 	if(len>TASKMGR_MESSAGE_SIZE) return;	// reject too-long messages
 	radioBuf.m_cmd = tmrMessage;
@@ -162,25 +176,25 @@ void TaskManagerRF::sendMessage(byte nodeId, byte taskId, void* buf, int len) {
 	radioBuf.m_fromTaskId = myId();
 	radioBuf.m_data[0] = taskId;	// who we are sending it to
 	memcpy(&radioBuf.m_data[1], buf, len);
-	radioSender(nodeId);
+	return radioSender(nodeId);
 }
 
-void TaskManagerRF::suspend(byte nodeId, byte taskId) {
+bool TaskManagerRF::suspend(byte nodeId, byte taskId) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::suspend(taskId); return; }
 	radioBuf.m_cmd = tmrSuspend;
 	radioBuf.m_fromNodeId = myNodeId();
 	radioBuf.m_fromTaskId = myId();
 	radioBuf.m_data[0] = taskId;
-	radioSender(nodeId);
+	return radioSender(nodeId);
 }
 
-void TaskManagerRF::resume(byte nodeId, byte taskId) {
+bool TaskManagerRF::resume(byte nodeId, byte taskId) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::resume(taskId); return; }
 	radioBuf.m_cmd = tmrResume;
 	radioBuf.m_fromNodeId = myNodeId();
 	radioBuf.m_fromTaskId = myId();
 	radioBuf.m_data[0] = taskId;
-	radioSender(nodeId);
+	return radioSender(nodeId);
 }
 
 void TaskManagerRF::getSource(byte& fromNodeId, byte& fromTaskId) {
