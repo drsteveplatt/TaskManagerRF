@@ -23,6 +23,10 @@
 
 #define TASKMGR_MESSAGE_SIZE (32-3)
 
+/*!	\typedef tmNodeId_t
+	The ID of a single node in a mesh.
+*/
+typedef uint8_t	tmNodeId_t;
 
 /*!	\struct	_TaskManagerRadioPacket
 	A packet of information being sent by radio between two TaskManager nodes
