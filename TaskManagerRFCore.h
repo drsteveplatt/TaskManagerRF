@@ -18,23 +18,23 @@
     This defines the maximum size for an inter-task message.  It is constrained, in part,
     by plans for RFI communication between tasks running on different devices.
 
-    Note that the NRF24's max payload size is 32.  Message overhead is 3 bytes.
+    Note that the NRF24's max payload size is 32.  Message overhead is cmd, src node, src task, dest task
 */
 
-#define TASKMGR_MESSAGE_SIZE (32-3)
+//#define TASKMGR_MESSAGE_SIZE (32-1-sizeof(tm_nodeId_t)-2*sizeof(tm_taskId_t))
 
 /*!	\typedef tmNodeId_t
 	The ID of a single node in a mesh.
 */
-typedef uint8_t	tmNodeId_t;
+//typedef uint8_t	tmNodeId_t;
 
 /*!	\struct	_TaskManagerRadioPacket
 	A packet of information being sent by radio between two TaskManager nodes
 */
 struct _TaskManagerRadioPacket {
 	byte	m_cmd;							//!< Command information
-	byte	m_fromNodeId;						// source node
-	byte	m_fromTaskId;						// source task
+	tm_nodeId_t	m_fromNodeId;						// source node
+	tm_taskId_t	m_fromTaskId;						// source task
 	byte	m_data[TASKMGR_MESSAGE_SIZE];	//! The data being transmitted.
 };
 
@@ -93,7 +93,7 @@ public:
 		\param sigNum -- The value of the signal to be sent
 		\sa yieldForSignal(), sendSignalAll(), addWaitSignal, addAutoWaitSignal()
 	*/
-	bool sendSignal(byte nodeId, byte sigNum);
+	bool sendSignal(tm_nodeId_t nodeId, byte sigNum);
 
 	/*! \brief Send a signal to all tasks that are waiting for this particular signal.
 
@@ -102,7 +102,7 @@ public:
 		\sa sendSignal(), yieldForSiganl(), addWaitSignal(), addAutoWaitSignal()
 	*/
 
-	bool sendSignalAll(byte nodeId, byte sigNum);
+	bool sendSignalAll(tm_nodeId_t nodeId, byte sigNum);
 
 	/*! \brief  Sends a string message to a task
 
@@ -120,7 +120,7 @@ public:
 		TASKMGR_MESSAGE_LENGTH-1 characters.
 		\sa yieldForMessage()
 	*/
-	bool sendMessage(byte nodeId, byte taskId, char* message);
+	bool sendMessage(tm_nodeId_t nodeId, tm_taskId_t taskId, char* message);
 
 	/*! \brief Send a binary message to a task
 
@@ -137,7 +137,7 @@ public:
 		\sa yieldForMessage()
 	*/
 
-	bool sendMessage(byte nodeId, byte taskId, void* buf, int len);
+	bool sendMessage(tm_nodeId_t nodeId, tm_taskId_t taskId, void* buf, int len);
 
 	/*!	\brief Get source node/task of last message/signal
 
@@ -148,7 +148,7 @@ public:
 		\param[out] fromNodeId -- the nodeId that sent the last message or signal
 		\param[out] fromTaskId -- the taskId that sent the last message or signal
 	*/
-	void getSource(byte& fromNodeId, byte& fromTaskId);
+	void getSource(tm_nodeId_t& fromNodeId, tm_taskId_t& fromTaskId);
 
 	/*! @} */
 
@@ -165,7 +165,7 @@ public:
 		\note Not implemented.
 		\sa resume()
 	*/
-	bool suspend(byte nodeId, byte taskId);			// node, task
+	bool suspend(tm_nodeId_t nodeId, tm_taskId_t taskId);			// node, task
 
 	/*!	\brief Resume the given task on the given node
 
@@ -176,12 +176,12 @@ public:
 		\note Not implemented.
 		\sa suspend()
 	*/
-	bool resume(byte nodeId, byte taskId);			// node, task
+	bool resume(tm_nodeId_t nodeId, tm_taskId_t taskId);			// node, task
 	/*! @} */
 
 
 private:
-	bool radioSender(byte);	// generic packet sender
+	bool radioSender(tm_nodeId_t);	// generic packet sender
 
     // status requests/
     //void yieldPingNode(byte);					// node -> status (responding/not responding)
@@ -228,7 +228,7 @@ public:
 		\param cePin -- Chip Enable pin
 		\param csPin -- Chip Select pin
 	*/
-	void radioBegin(byte nodeId, byte cePin, byte csPin);
+	void radioBegin(tm_nodeId_t nodeId, byte cePin, byte csPin);
 
 	/*! @name Miscellaneous and Informational Routines */
 	/*! @{ */
@@ -237,7 +237,7 @@ public:
 		\return The byte value that is the current node's radio ID.  If the radio has not been
 		enabled, returns 0.
 	*/
-    byte myNodeId();
+    tm_nodeId_t myNodeId();
     /*! @} */
 };
 
@@ -256,7 +256,7 @@ public:
 // Inline stuff
 //
 
-inline byte TaskManagerRF::myNodeId() {
+inline tm_nodeId_t TaskManagerRF::myNodeId() {
 	return m_myNodeId;
 }
 

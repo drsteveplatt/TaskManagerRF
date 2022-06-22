@@ -88,7 +88,7 @@ void TaskManagerRF::tmRadioReceiverTask() {
 
 // General purpose sender.  Sends a message somewhere (varying with the kind of radio)
 static byte nodeName[6] = "xTMGR";	// shared buf
-bool TaskManagerRF::radioSender(byte destNodeID) {
+bool TaskManagerRF::radioSender(tm_nodeId_t destNodeID) {
 	// send packet to NRF24 node "TMGR"+nodeID
 	//static byte nodeName[6] = F("xTMGR");
 	bool ret;
@@ -102,16 +102,9 @@ bool TaskManagerRF::radioSender(byte destNodeID) {
 			ret = true;
 			break;
 		}
-		else delay(5);
-#if false
-		if(!m_rf24->write(&radioBuf, sizeof(radioBuf))) {
-			Serial.print(F("write fail ")); Serial.println(i);
-		}
 		else {
-			ret = true;
-			break;
+			delay(5);
 		}
-#endif
 	}
 	m_rf24->startListening();
 	return ret;
@@ -119,7 +112,7 @@ bool TaskManagerRF::radioSender(byte destNodeID) {
 
 // If we have different radio receivers, they will have different instantiation routines.
 
-void TaskManagerRF::radioBegin(byte nodeId, byte cePin, byte csPin) {
+void TaskManagerRF::radioBegin(tm_nodeId_t nodeId, byte cePin, byte csPin) {
 	//uint8_t pipeName[6];
 	m_myNodeId = nodeId;
 	m_rf24 = new RF24(cePin, csPin);
@@ -135,7 +128,7 @@ void TaskManagerRF::radioBegin(byte nodeId, byte cePin, byte csPin) {
 }
 
 
-bool TaskManagerRF::sendSignal(byte nodeId, byte sigNum) {
+bool TaskManagerRF::sendSignal(tm_nodeId_t nodeId, byte sigNum) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::sendSignal(sigNum); return; }
 	radioBuf.m_cmd = tmrSignal;
 	radioBuf.m_fromNodeId = myNodeId();
@@ -144,7 +137,7 @@ bool TaskManagerRF::sendSignal(byte nodeId, byte sigNum) {
 	return radioSender(nodeId);
 }
 
-bool TaskManagerRF::sendSignalAll(byte nodeId, byte sigNum) {
+bool TaskManagerRF::sendSignalAll(tm_nodeId_t nodeId, byte sigNum) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::sendSignalAll(sigNum); return; }
 	radioBuf.m_cmd = tmrSignalAll;
 	radioBuf.m_fromNodeId = myNodeId();
@@ -153,7 +146,7 @@ bool TaskManagerRF::sendSignalAll(byte nodeId, byte sigNum) {
 	return radioSender(nodeId);
 }
 
-bool TaskManagerRF::sendMessage(byte nodeId, byte taskId, char* message) {
+bool TaskManagerRF::sendMessage(tm_nodeId_t nodeId, tm_taskId_t taskId, char* message) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::sendMessage(taskId, message); return; }
 	radioBuf.m_cmd = tmrMessage;
 	radioBuf.m_fromNodeId = myNodeId();
@@ -168,7 +161,7 @@ bool TaskManagerRF::sendMessage(byte nodeId, byte taskId, char* message) {
 	return radioSender(nodeId);
 }
 
-bool TaskManagerRF::sendMessage(byte nodeId, byte taskId, void* buf, int len) {
+bool TaskManagerRF::sendMessage(tm_nodeId_t nodeId, tm_taskId_t taskId, void* buf, int len) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::sendMessage(taskId, buf, len); return; }
 	if(len>TASKMGR_MESSAGE_SIZE) return;	// reject too-long messages
 	radioBuf.m_cmd = tmrMessage;
@@ -179,7 +172,7 @@ bool TaskManagerRF::sendMessage(byte nodeId, byte taskId, void* buf, int len) {
 	return radioSender(nodeId);
 }
 
-bool TaskManagerRF::suspend(byte nodeId, byte taskId) {
+bool TaskManagerRF::suspend(tm_nodeId_t nodeId, tm_taskId_t taskId) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::suspend(taskId); return; }
 	radioBuf.m_cmd = tmrSuspend;
 	radioBuf.m_fromNodeId = myNodeId();
@@ -188,7 +181,7 @@ bool TaskManagerRF::suspend(byte nodeId, byte taskId) {
 	return radioSender(nodeId);
 }
 
-bool TaskManagerRF::resume(byte nodeId, byte taskId) {
+bool TaskManagerRF::resume(tm_nodeId_t nodeId, tm_taskId_t taskId) {
 	if(nodeId==0 || nodeId==myNodeId()) { TaskManager::resume(taskId); return; }
 	radioBuf.m_cmd = tmrResume;
 	radioBuf.m_fromNodeId = myNodeId();
@@ -197,7 +190,7 @@ bool TaskManagerRF::resume(byte nodeId, byte taskId) {
 	return radioSender(nodeId);
 }
 
-void TaskManagerRF::getSource(byte& fromNodeId, byte& fromTaskId) {
+void TaskManagerRF::getSource(tm_nodeId_t& fromNodeId, tm_taskId_t& fromTaskId) {
 	fromNodeId = m_theTasks.front().m_fromNodeId;
 	fromTaskId = m_theTasks.front().m_fromTaskId;
 }
